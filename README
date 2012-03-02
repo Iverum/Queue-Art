@@ -1,0 +1,5 @@
+Queue Art is a PHP script that pulls images from a Flickr collection using Flickr's API.
+
+Queue Art is free to use and modify. I would appreciate an email telling me how you use it and a link to the use if possible.
+
+The config.php will need an API key from Flickr to function.
