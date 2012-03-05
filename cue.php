@@ -16,6 +16,13 @@
 	// Check for the PERSIST constant
 	if(PERSIST)
 	{
+	
+		// Check the PERSIST_NUM and PERSIST_LEN variables for correct settings
+		if ((!validate_constants(PERSIST_NUM)) && (!validate_constants(PERSIST_LEN)))
+		{
+			exit("Constants improperly defined.");
+		}
+		
 		// If it is set to true, we need to check if a file containing the persistent IDs exists
 		if (file_exists($file))
 		{
@@ -27,25 +34,58 @@
 			if (time() >= $org_time)
 			{
 				// If the timestamp is expired replace the id saved in the file with a new id
-				create_persistence($file, $xml);
+				create_persistence($file, $xml, PERSIST_NUM);
 			}
 		}
 		else
 		{
 			// If the file doesn't exist we should create it
-			create_persistence($file, $xml);
+			create_persistence($file, $xml, PERSIST_NUM);
 		}
 		
 		// At this point we are aware that persistence is set and the file has been created/updated
-		// Now we want to get the id from the file and find that id in the API call
-		$id = $persist->photo['id'];
-		$photos = $xml->photos->photo;
-		foreach ($photos as $photo)
+		// If $_GET['id'] is set we need to get that value
+		if (isset($_GET['id']))
 		{
-			if (trim($photo['id']) == trim($id))
+			$p_id = $_GET['id'] - 1;
+			$id = $persist->photo[$p_id]['id'];
+			$photos = $xml->photos->photo;
+			foreach ($photos as $photo)
 			{
-				$l_url = $photo['url_l'];
-				break;
+				if (trim($photo['id']) == trim($id))
+				{
+					$l_url = $photo['url_l'];
+					break;
+				}
+			}
+			// if the id isn't found in the persistence records
+			if (empty($l_url))
+			{
+				$id = $persist->photo[0]['id'];
+				$photos = $xml->photos->photo;
+				foreach ($photos as $photo)
+				{
+					if (trim($photo['id']) == trim($id))
+					{
+						$l_url = $photo['url_l'];
+						break;
+					}
+				}
+			}
+		}
+		else
+		// $_GET['id'] isn't set. Just grab the first image
+		{
+			// Now we want to get the id from the file and find that id in the API call
+			$id = $persist->photo[0]['id'];
+			$photos = $xml->photos->photo;
+			foreach ($photos as $photo)
+			{
+				if (trim($photo['id']) == trim($id))
+				{
+					$l_url = $photo['url_l'];
+					break;
+				}
 			}
 		}
 	}
@@ -53,9 +93,45 @@
 	// If the PERSIST constant isn't set
 	else
 	{
-		// Pull the first photo in the collection
-		$photo = $xml->photos->photo;
-		$l_url = $photo['url_l'];
+	
+		if (isset($_GET['id']))
+		{
+			// If an id exists set it to a variable
+			// It should be noted that $id does not actually correspond to an id in the XML.
+			$id = $_GET['id'];
+			
+			// Loop through the collection and count until the count matches the id
+			$count = 0;
+			$photos = $xml->photos->photo;
+			foreach ($photos as $photo)
+			{
+				// When the count equals the id pull the url and break the loop
+				if ($count == $id)
+				{
+					$l_url = $photo['url_l'];
+					break;
+				} 
+				// If the count doesn't match the id increment the count
+				else 
+				{
+					$count++;
+				}
+			}
+			
+			// If the $l_url is empty (which means that the id wasn't found)
+			// just pull the first photo in the collection
+			if (empty($l_url))
+			{
+				$photo = $xml->photos->photo;
+				$l_url = $photo['url_l'];
+			}
+		}
+		else
+		{
+			// Pull the first photo in the collection
+			$photo = $xml->photos->photo;
+			$l_url = $photo['url_l'];
+		}
 	}
 	
 	// echo the img tag with the url as the source
