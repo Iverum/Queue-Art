@@ -16,6 +16,7 @@
 			foreach($ids as $item) {
 				if($item == $id) {
 					$exists = true; 
+					$i--;
 					break;
 				}
 			}
